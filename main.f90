@@ -301,7 +301,7 @@ subroutine dloss_func(variables,nvariables,mol_training,n_mol_training,target_tr
     end do
   end do
   dfdv_norm = dot_product(dfdv,dfdv)
-  print*,'Norm of dfdv:', dfdv_norm
+  write(*,'(A,E12.5)')'Norm of dfdv:', dfdv_norm
 !  dfdv=dfdv/sqrt(dfdv_norm)
   deallocate(dLoss_dOutput)
 end subroutine dloss_func
