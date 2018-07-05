@@ -1,0 +1,13 @@
+activationfunc.o : activationfunc.f90 precision_m.o 
+ann.o : ann.f90 random.o precision_m.o 
+atom.o : atom.f90 precision_m.o 
+dfpmin.o : dfpmin.f90 ann.o molecule.o precision_m.o 
+lib.o : lib.f90 precision_m.o 
+lnsrch.o : lnsrch.f90 ann.o molecule.o precision_m.o 
+main.o : main.f90 random.o ann.o molecule.o precision_m.o 
+molecule.o : molecule.f90 atom.o precision_m.o 
+precision_m.o : precision_m.f90 
+random.o : random.f90 precision_m.o 
+test2.o : test2.f90 
+test3.o : test3.f90 
+test.o : test.f90 
