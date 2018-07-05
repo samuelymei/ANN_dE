@@ -1,4 +1,4 @@
-SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training,predicted_training)
+SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training,predicted_training,mol_test,n_mol_test,target_test,predicted_test)
   use precision_m
   use molecule_m
   use ann_m
@@ -10,6 +10,10 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_an
   integer(kind=4), intent(in) :: idx_ann_for_atom(mol_training(1)%num_atoms)
   real(kind=fp_kind), intent(in) :: target_training(n_mol_training)
   real(kind=fp_kind), intent(out) :: predicted_training(n_mol_training)
+  type(molecule_t), intent(in) :: mol_test(n_mol_test)
+  integer(kind=4), intent(in) :: n_mol_test
+  real(kind=fp_kind), intent(in) :: target_test(n_mol_test)
+  real(kind=fp_kind), intent(out) :: predicted_test(n_mol_test)
   
   INTEGER(kind=4) :: iter,n,ITMAX
   REAL(kind=fp_kind) :: fret,gtol,p(n),EPS,STPMX,TOLX

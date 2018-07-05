@@ -47,6 +47,18 @@ program ANN_dE
      call mol_training(idx_molecule)%gfactor()
   end do
 
+  do idx_molecule = n_mol_training + 1, n_mol_training + n_mol_test
+     write(f_xyz,'(I3)') idx_molecule
+     f_xyz='Mgas'//trim(adjustl(f_xyz))//'.xyz'
+     id_f_xyz = 11
+     open(id_f_xyz, file = trim(f_xyz), form='formatted')
+     call mol_test(idx_molecule)%read_in_from_xyz(id_f_xyz)
+     close(id_f_xyz)
+     call mol_test(idx_molecule)%count_elements()
+     call mol_test(idx_molecule)%gfactor()
+  end do
+
+
 ! read in target data
   allocate(target_training(n_mol_training))
   allocate(target_test(n_mol_test))
@@ -55,13 +67,7 @@ program ANN_dE
   open(12, file = "../e-diff-shif.dat")
   do idx_molecule = 1, n_mol_training
     read(12,*) jdx_molecule, target_training(idx_molecule)
-!    write(14,*)jdx_molecule, target_training(idx_molecule)
   end do
-!  training_min = minval(target_training)
-!  training_max = maxval(target_training)
-!  do i = 1, n_mol_training
-!    target_training(i) = (target_training(i)-training_min)/(training_max-training_min)
-!  end do 
   do idx_molecule = 1, n_mol_test
     read(12,*) jdx_molecule, target_test(idx_molecule)
   end do
@@ -124,8 +130,7 @@ program ANN_dE
     end do
   end if
 
-  call dfpmin(variables,nvariables,1.D-6,iter,fret,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training,predicted_training)
-!  predicted_training = predicted_training * (training_max-training_min) + training_min
+  call dfpmin(variables,nvariables,1.D-6,iter,fret,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training,predicted_training,mol_test,n_mol_test,target_test,predicted_test)
   write(18)nvariables
   write(18,*)variables
   write(50,'(8F10.6)')predicted_training
