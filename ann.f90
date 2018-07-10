@@ -9,7 +9,6 @@ module ann_m
     integer(kind=4) :: nOutput
     character(len=2) :: ctag
     integer(kind=4), allocatable :: nNeurons(:)
-!    real(kind=fp_kind), allocatable :: input(:)
     real(kind=fp_kind), allocatable :: output(:)
     real(kind=fp_kind), allocatable :: w(:,:,:)
     real(kind=fp_kind), allocatable :: a(:,:)
@@ -195,8 +194,7 @@ module ann_m
       this%ag=0.d0
 
       this%ag(1,this%nHiddenLayer+1) = dLoss_dOutput
-      this%biasg(1,this%nHiddenLayer+1) = &
-                this%biasg(1,this%nHiddenLayer+1) + this%ag(1,this%nHiddenLayer+1)
+      this%biasg(1,this%nHiddenLayer+1) = this%ag(1,this%nHiddenLayer+1)
 
 !      write(70,*)this%ctag,this%biasg(1,this%nHiddenLayer+1)
 
@@ -206,14 +204,14 @@ module ann_m
 !        dLoss_dOutput(this%nOutput)
         kdx_neuron = 1
 !        do kdx_neuron = 1, this%nNeurons(idx_layer+1) 
-          this%wg(jdx_neuron,kdx_neuron,idx_layer) = this%wg(jdx_neuron,kdx_neuron,idx_layer) &
-                                                   + this%ag(kdx_neuron,idx_layer+1)*this%z(jdx_neuron,idx_layer) 
+          this%wg(jdx_neuron,kdx_neuron,idx_layer) = &
+                                                    this%ag(kdx_neuron,idx_layer+1)*this%z(jdx_neuron,idx_layer) 
           this%zg(jdx_neuron,idx_layer) = this%zg(jdx_neuron,idx_layer) &
                                          + this%ag(kdx_neuron,idx_layer+1)*this%w(jdx_neuron,kdx_neuron,idx_layer)
 !        end do
         this%ag(jdx_neuron,idx_layer) = this%zg(jdx_neuron,idx_layer) * this%DeactivateFunc(this%a(jdx_neuron,idx_layer))
 
-        this%biasg(jdx_neuron,idx_layer) = this%biasg(jdx_neuron,idx_layer) + this%ag(jdx_neuron,idx_layer)
+        this%biasg(jdx_neuron,idx_layer) = this%ag(jdx_neuron,idx_layer)
 
 !        write(77,'(3I4,3G12.4)')idx_layer,jdx_neuron,kdx_neuron,this%wg(jdx_neuron,kdx_neuron,idx_layer),this%ag(kdx_neuron,idx_layer+1),this%z(jdx_neuron,idx_layer)
 !        write(26,'(2I4,3G12.4)')idx_layer,jdx_neuron,this%ag(jdx_neuron,idx_layer), this%zg(jdx_neuron,idx_layer), this%DeactivateFunc(this%a(jdx_neuron,idx_layer))
@@ -236,7 +234,7 @@ module ann_m
           end do
           if(idx_layer>0)then
             this%ag(jdx_neuron,idx_layer) = this%zg(jdx_neuron,idx_layer)*this%DeactivateFunc(this%a(jdx_neuron,idx_layer))
-            this%biasg(jdx_neuron,idx_layer) = this%biasg(jdx_neuron,idx_layer) + this%ag(jdx_neuron,idx_layer)
+            this%biasg(jdx_neuron,idx_layer) = this%ag(jdx_neuron,idx_layer)
 !            write(28,'(2I4,3G12.4)')idx_layer,jdx_neuron,this%ag(jdx_neuron,idx_layer), this%zg(jdx_neuron,idx_layer), this%DeactivateFunc(this%a(jdx_neuron,idx_layer))
 
           end if

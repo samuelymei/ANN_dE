@@ -1,22 +1,32 @@
-SUBROUTINE lnsrch(n,xold,fold,g,p,x,f,stpmax,check,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training)
+SUBROUTINE lnsrch(n,xold,fold,g,p,x,f,stpmax,check,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test)
   use precision_m
   use molecule_m
   use ann_m
   implicit none
-  INTEGER(kind=4) :: n
-  type(molecule_t), intent(in) :: mol_training(n_mol_training)
-  integer(kind=4), intent(in) :: n_mol_training
+  integer(kind=4) :: n
+  real(kind=fp_kind), intent(in) :: xold(n), fold, g(n)
+  real(kind=fp_kind), intent(in out) :: p(n)
+  real(kind=fp_kind), intent(out) :: x(n)
+  real(kind=fp_kind), intent(out) :: f
+
+  real(kind=fp_kind), intent(in) :: stpmax
+
+  logical, intent(out) :: check
+
   type(NeuralNetwork_t), intent(inout) :: ann(nann)
   integer(kind=4), intent(in) :: nann
-  integer(kind=4), intent(in) :: idx_ann_for_atom(mol_training(1)%num_atoms)
-  real(kind=fp_kind), intent(in) :: target_training(n_mol_training)
-  real(kind=fp_kind) :: predicted_training(n_mol_training)
 
-  LOGICAL :: check
-  REAL(kind=fp_kind) :: f,fold,stpmax,g(n),p(n),x(n),xold(n),ALF,TOLX
+  type(molecule_t), intent(inout) :: mol_training(n_mol_training)
+  integer(kind=4), intent(in) :: n_mol_training
+
+  type(molecule_t), intent(inout) :: mol_test(n_mol_test)
+  integer(kind=4), intent(in) :: n_mol_test
+
+  real(kind=fp_kind) :: ft
+  real(kind=fp_kind) :: ALF,TOLX
   PARAMETER (ALF=1.e-4,TOLX=1.e-7)
-  INTEGER(kind=4) :: i
-  REAL(kind=fp_kind) :: a,alam,alam2,alamin,b,disc,f2,fold2,rhs1,rhs2,slope,sum,temp,test,tmplam 
+  integer(kind=4) :: i
+  real(kind=fp_kind) :: a,alam,alam2,alamin,b,disc,f2,fold2,rhs1,rhs2,slope,sum,temp,test,tmplam 
 
   check=.false.
   sum=0.
@@ -44,7 +54,7 @@ SUBROUTINE lnsrch(n,xold,fold,g,p,x,f,stpmax,check,mol_training,n_mol_training,a
     do i=1,n
       x(i)=xold(i)+alam*p(i)
     end do
-    call loss_func(x,n,mol_training,n_mol_training,target_training,ann,nann,idx_ann_for_atom,predicted_training,f)
+    call loss_func(x,n,ann,nann,mol_training,n_mol_training,f,mol_test,n_mol_test,ft)
     if(alam.lt.alamin)then
       do i=1,n
         x(i)=xold(i)

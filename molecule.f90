@@ -11,11 +11,13 @@ module molecule_m
     real(kind=fp_kind) :: charge  ! may allow fractional charge
     real(kind=fp_kind) :: dipole(3) 
     integer(kind=4) :: spin_multiplicity
+    real(kind=fp_kind) :: dE, target_dE
     contains
       procedure :: whole_translate
       procedure :: read_in_from_xyz
       procedure :: count_elements
       procedure :: gfactor
+      procedure :: computeMoledE
   end type molecule_t
   contains
     subroutine whole_translate(this,r)
@@ -68,7 +70,6 @@ module molecule_m
         this%num_elements = nelement
         allocate(this%elements(this%num_elements))
         this%elements = elements
-!        print*,'Number of elements:', this%num_elements
         deallocate(elements)
       end if
 
@@ -175,4 +176,14 @@ module molecule_m
           cos_angle = (r12**2+r23**2-r23**2)/(2*r12*r23)
         end function cos_angle
     end subroutine gfactor
+
+    subroutine computeMoledE(this)
+      class(molecule_t) :: this
+      integer(kind=4) :: idx_atom
+      this%dE=0.d0
+      do idx_atom = 1, this%num_atoms
+         this%dE = this%dE + this%atoms_p(idx_atom)%dE
+      end do
+    end subroutine computeMoledE
+
 end module molecule_m

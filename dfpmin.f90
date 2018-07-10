@@ -1,30 +1,43 @@
-SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training,predicted_training,mol_test,n_mol_test,target_test,predicted_test)
+SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test,actvfunc)
   use precision_m
   use molecule_m
   use ann_m
   implicit none
-  type(molecule_t), intent(in) :: mol_training(n_mol_training)
-  integer(kind=4), intent(in) :: n_mol_training
-  type(NeuralNetwork_t), intent(inout) :: ann(nann)
+
+  real(kind=fp_kind), intent(in out) :: p(n)
+  integer(kind=4), intent(in) :: n
+  real(kind=fp_kind), intent(in) :: gtol
+  integer(kind=4), intent(out) :: iter
+  real(kind=fp_kind), intent(out) :: fret
+
+  type(NeuralNetwork_t), intent(in out) :: ann(nann)
   integer(kind=4), intent(in) :: nann
-  integer(kind=4), intent(in) :: idx_ann_for_atom(mol_training(1)%num_atoms)
-  real(kind=fp_kind), intent(in) :: target_training(n_mol_training)
-  real(kind=fp_kind), intent(out) :: predicted_training(n_mol_training)
-  type(molecule_t), intent(in) :: mol_test(n_mol_test)
+
+  type(molecule_t), intent(in out) :: mol_training(n_mol_training)
+  integer(kind=4), intent(in) :: n_mol_training
+
+  type(molecule_t), intent(in out) :: mol_test(n_mol_test)
   integer(kind=4), intent(in) :: n_mol_test
-  real(kind=fp_kind), intent(in) :: target_test(n_mol_test)
-  real(kind=fp_kind), intent(out) :: predicted_test(n_mol_test)
+
+  character(len=20), intent(in) :: actvfunc
   
-  INTEGER(kind=4) :: iter,n,ITMAX
-  REAL(kind=fp_kind) :: fret,gtol,p(n),EPS,STPMX,TOLX
-  PARAMETER (ITMAX=1000000,STPMX=100.,EPS=3.e-8,TOLX=4.*EPS)
+  real(kind=fp_kind) :: loss_training, loss_test
+  real(kind=fp_kind) :: pre_loss_test
+
+  integer(kind=4), parameter :: ITMAX = 2000
+  real(kind=fp_kind), parameter :: EPS = 3.E-8, STPMX = 10, TOLX = 4.*EPS
   INTEGER(kind=4) ::  i,its,j
   LOGICAL :: check
   REAL(kind=fp_kind) :: den,fac,fad,fae,fp,stpmax,sum,sumdg,sumxi,temp,test,dg(n), &
        &g(n),hdg(n),hessin(n,n),pnew(n),xi(n)
+  real(kind=fp_kind) :: fp2
+
+  integer(kind=4), parameter :: MAX_coupon = 10
+  integer(kind=4) :: n_coupon = MAX_coupon
   
-  call loss_func(p,n,mol_training,n_mol_training,target_training,ann,nann,idx_ann_for_atom,predicted_training,fp) !function called here
-  call dloss_func(p,n,mol_training,n_mol_training,target_training,ann,nann,idx_ann_for_atom,predicted_training,g)
+  call dloss_func(p,n,ann,nann,mol_training,n_mol_training,fp,mol_test,n_mol_test,fp2,actvfunc,g)
+  write(*,'(A,I,A,G12.5,1X,G12.5)') 'Iteration ', 0, ' Loss functions ', sqrt(fp), sqrt(fp2)
+  pre_loss_test = fp2
   sum=0.
   hessin=0.d0
   do i=1,n
@@ -35,7 +48,7 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_an
   stpmax=STPMX*max(sqrt(sum),float(n))
   do its=1,ITMAX
     iter=its
-    call lnsrch(n,p,fp,g,xi,pnew,fret,stpmax,check,mol_training,n_mol_training,ann,nann,idx_ann_for_atom,target_training)
+    call lnsrch(n,p,fp,g,xi,pnew,fret,stpmax,check,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test)
     fp=fret
     do i=1,n
       xi(i)=pnew(i)-p(i)
@@ -50,7 +63,23 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_an
     do i=1,n
       dg(i)=g(i)
     end do
-    call dloss_func(p,n,mol_training,n_mol_training,target_training,ann,nann,idx_ann_for_atom,predicted_training,g)
+    call dloss_func(p,n,ann,nann,mol_training,n_mol_training,loss_training,mol_test,n_mol_test,loss_test,actvfunc,g)
+    write(*,'(A,I,A,G12.5,1X,G12.5,A,1X,G12.5,A,I2)') 'Iteration ', iter, ' Loss functions ', sqrt(loss_training), sqrt(loss_test), 'Norm of dfdv: ', dot_product(g,g), ' # coupon ', n_coupon
+    if(loss_test>loss_training)then
+      if(loss_test <= pre_loss_test)then
+        pre_loss_test = loss_test
+        if(n_coupon < MAX_coupon) n_coupon = n_coupon + 1
+      else
+        pre_loss_test = loss_test
+        write(*,*)'Loss function for test set increased. Coupon reduced by 1'
+        if(n_coupon > 0 )then
+          n_coupon = n_coupon - 1
+        else
+          write(*,*)'Coupon used up. Training stops.'
+          return
+        end if
+      end if
+    end if
     test=0.
     den=max(fret,1.)
     do i=1,n
@@ -95,6 +124,9 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,mol_training,n_mol_training,ann,nann,idx_an
         xi(i)=xi(i)-hessin(i,j)*g(j)
       end do
     end do
+    rewind(18)
+    write(18)n
+    write(18)p
   end do
   pause 'too many iterations in dfpmin'
   return
