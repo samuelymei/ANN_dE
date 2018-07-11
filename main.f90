@@ -6,8 +6,12 @@ program ANN_dE
   implicit none
 
   integer(kind=4) :: n_mol_training, n_mol_test
+  type(molecule_t), allocatable :: molecules(:)
   type(molecule_t), allocatable :: mol_training(:), mol_test(:)
   integer(kind=4) :: idx_molecule, jdx_molecule, idx_atom
+  integer(kind=4), allocatable :: mol_seq(:)
+  integer(kind=4) :: nchsn, ichsn
+  logical, allocatable :: chosen(:)
   integer(kind=4) :: id_f_xyz
   character(len=20) :: f_xyz
 
@@ -30,38 +34,53 @@ program ANN_dE
 ! read in molecules
   n_mol_training = 600
   n_mol_test = 200
+  allocate(molecules(n_mol_training+n_mol_test))
   allocate(mol_training(n_mol_training))
   allocate(mol_test(n_mol_test))
-  do idx_molecule = 1, n_mol_training
+  do idx_molecule = 1, n_mol_training + n_mol_test
      write(f_xyz,'(I3)') idx_molecule
      f_xyz='Mgas'//trim(adjustl(f_xyz))//'.xyz'
      id_f_xyz = 11   
      open(id_f_xyz, file = trim(f_xyz), form='formatted')
-     call mol_training(idx_molecule)%read_in_from_xyz(id_f_xyz)
+!     call molecules(idx_molecule)%reset
+     call molecules(idx_molecule)%read_in_from_xyz(id_f_xyz)
      close(id_f_xyz)
-     call mol_training(idx_molecule)%count_elements()
-     call mol_training(idx_molecule)%gfactor()
-  end do
-  do idx_molecule = 1, n_mol_test
-     write(f_xyz,'(I3)') idx_molecule + n_mol_training
-     f_xyz='Mgas'//trim(adjustl(f_xyz))//'.xyz'
-     id_f_xyz = 11
-     open(id_f_xyz, file = trim(f_xyz), form='formatted')
-     call mol_test(idx_molecule)%read_in_from_xyz(id_f_xyz)
-     close(id_f_xyz)
-     call mol_test(idx_molecule)%count_elements()
-     call mol_test(idx_molecule)%gfactor()
+     call molecules(idx_molecule)%count_elements()
+     call molecules(idx_molecule)%gfactor()
   end do
 
 ! read in target data
   open(12, file = "../e-diff-shif.dat")
-  do idx_molecule = 1, n_mol_training
-    read(12,*) jdx_molecule, mol_training(idx_molecule)%target_dE
-  end do
-  do idx_molecule = 1, n_mol_test
-    read(12,*) jdx_molecule, mol_test(idx_molecule)%target_dE
+  do idx_molecule = 1, n_mol_training + n_mol_test
+    read(12,*) jdx_molecule, molecules(idx_molecule)%target_dE
   end do
   close(12)
+  
+!shuffle the molecules
+  allocate(mol_seq(n_mol_training + n_mol_test))
+  allocate(chosen(n_mol_training + n_mol_test))
+  chosen=.false.
+  nchsn = 0
+  do while(nchsn<n_mol_training)
+    ichsn = 1 + int(MyUniformRand()*(n_mol_training + n_mol_test))
+    if(chosen(ichsn))cycle
+    chosen(ichsn) = .true.
+    nchsn = nchsn + 1
+    mol_seq(nchsn) = ichsn
+  end do
+  do idx_molecule = 1, n_mol_training + n_mol_test
+    if(chosen(idx_molecule))cycle
+    nchsn = nchsn + 1
+    mol_seq(nchsn) = idx_molecule
+  end do
+
+! copy the molecules to training set and test set
+  do idx_molecule = 1, n_mol_training
+    call mol_training(idx_molecule)%copyfrom(molecules(mol_seq(idx_molecule)))
+  end do
+  do idx_molecule = 1, n_mol_test
+    call mol_test(idx_molecule)%copyfrom(molecules(mol_seq(idx_molecule+n_mol_training)))
+  end do
 
   print*,'Is it a restart job? 0. No. 1. Yes.'
   read*, irest
@@ -144,8 +163,11 @@ program ANN_dE
 
 !  call gdmin(variables,nvariables,1.D-6,iter,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test)
 
+  deallocate(molecules)
   deallocate(mol_training)
   deallocate(mol_test)
+  deallocate(mol_seq)
+  deallocate(chosen)
   deallocate(nNeurons)
   deallocate(ann)
   deallocate(ann_elements)

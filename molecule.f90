@@ -3,23 +3,62 @@ module molecule_m
   use atom_m
   implicit none
   type molecule_t
-    integer(kind=4) :: num_atoms
-    integer(kind=4) :: num_elements
+    integer(kind=4) :: num_atoms=0
+    integer(kind=4) :: num_elements=0
     character(len=2), allocatable :: elements(:)
-    real(kind=fp_kind) :: molecular_mass
+    real(kind=fp_kind) :: molecular_mass=0.d0
     type(atom_t), allocatable :: atoms_p(:)
-    real(kind=fp_kind) :: charge  ! may allow fractional charge
-    real(kind=fp_kind) :: dipole(3) 
-    integer(kind=4) :: spin_multiplicity
-    real(kind=fp_kind) :: dE, target_dE
+    real(kind=fp_kind) :: charge=0.d0  ! may allow fractional charge
+    real(kind=fp_kind) :: dipole(3)=0.d0
+    integer(kind=4) :: spin_multiplicity=0
+    real(kind=fp_kind) :: dE=0.d0, target_dE=0.d0
     contains
+      procedure :: reset
       procedure :: whole_translate
       procedure :: read_in_from_xyz
       procedure :: count_elements
       procedure :: gfactor
       procedure :: computeMoledE
+      procedure :: copyfrom
   end type molecule_t
   contains
+    subroutine reset(this)
+      class(molecule_t) :: this
+      this%num_atoms=0
+      this%num_elements=0
+      if(allocated(this%elements))deallocate(this%elements)
+      this%molecular_mass=0.d0
+      if(allocated(this%atoms_p)) deallocate(this%atoms_p)
+      this%charge=0.d0
+      this%dipole=0.d0
+      this%spin_multiplicity=0.d0
+      this%dE=0.d0
+      this%target_dE=0.d0
+    end subroutine reset
+
+    subroutine copyfrom(this,that)
+      class(molecule_t) :: this
+      type(molecule_t) :: that
+      integer(kind=4) :: idx_atom
+      this%num_atoms = that%num_atoms
+      this%num_elements = that%num_elements
+      if(allocated(that%elements))then
+        allocate(this%elements(this%num_elements), source = that%elements)
+      end if
+      this%molecular_mass = that%molecular_mass
+      if(allocated(that%atoms_p))then
+        allocate(this%atoms_p(this%num_atoms))
+        do idx_atom = 1, this%num_atoms
+          call this%atoms_p(idx_atom)%copyfromatom(that%atoms_p(idx_atom))
+        end do
+      end if
+      this%charge = that%charge
+      this%dipole = that%dipole
+      this%spin_multiplicity = that%spin_multiplicity
+      this%dE = that%dE
+      this%target_dE = that%target_dE
+    end subroutine copyfrom
+
     subroutine whole_translate(this,r)
       class(molecule_t) :: this
       real(kind=fp_kind) :: r(3)
@@ -38,6 +77,7 @@ module molecule_m
       read(f_xyz,*)
       allocate(this%atoms_p(this%num_atoms))
       do idx_atom = 1, this%num_atoms
+!        call this%atoms_p(idx_atom)%resetatom
         read(f_xyz,*)this%atoms_p(idx_atom)%element, this%atoms_p(idx_atom)%crd(1:3)
       end do
     end subroutine read_in_from_xyz

@@ -3,18 +3,20 @@ module atom_m
   use ann_m
   implicit none
   type atom_t
-    character(len=2) :: element
-    integer(kind=4) :: atomic_number
-    real(kind=fp_kind) :: atomic_mass
-    character(len=4) :: name
-    real(kind=fp_kind) :: crd(3)
-    real(kind=fp_kind) :: eta, xi
-    real(kind=fp_kind) :: g1, g2
-    real(kind=fp_kind) :: dE
-    type(NeuralNetwork_t), pointer :: ann
+    character(len=2) :: element=''
+    integer(kind=4) :: atomic_number=0
+    real(kind=fp_kind) :: atomic_mass=0.d0
+    character(len=4) :: name=''
+    real(kind=fp_kind) :: crd(3)=0.d0
+    real(kind=fp_kind) :: eta=0.d0, xi=0.d0
+    real(kind=fp_kind) :: g1=0.d0, g2=0.d0
+    real(kind=fp_kind) :: dE=0.d0
+    type(NeuralNetwork_t), pointer :: ann => null()
     contains
+      procedure :: resetatom
       procedure :: translate
       procedure :: computedE
+      procedure :: copyfromatom
   end type atom_t
 
   type, extends(atom_t) :: mm_atom_t
@@ -23,6 +25,37 @@ module atom_m
   end type mm_atom_t
 
   contains
+    subroutine resetatom(this)
+      class( atom_t ) :: this
+      this%element=''
+      this%atomic_number=0
+      this%atomic_mass=0.d0
+      this%name=''
+      this%crd=0.d0
+      this%eta=0.d0
+      this%xi=0.d0
+      this%g1=0.d0
+      this%g2=0.d0
+      this%dE=0.d0
+!      if(associated(this%ann))nullify(this%ann)
+    end subroutine resetatom
+
+    subroutine copyfromatom(this,that)
+      class( atom_t ) :: this
+      type(atom_t) :: that
+      this%element = that%element
+      this%atomic_number = that%atomic_number
+      this%atomic_mass = that%atomic_mass
+      this%name = that%name
+      this%crd = that%crd
+      this%eta = that%eta
+      this%xi = that%xi
+      this%g1 = that%g1
+      this%g2 = that%g2
+      this%dE = that%dE
+      if(associated(that%ann))this%ann=that%ann
+    end subroutine copyfromatom
+
     subroutine translate(this,r)
       class( atom_t ) :: this
       real(kind=fp_kind), intent(in) :: r(3)
