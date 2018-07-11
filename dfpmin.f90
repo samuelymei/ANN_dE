@@ -23,6 +23,7 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_te
   
   real(kind=fp_kind) :: loss_training, loss_test
   real(kind=fp_kind) :: pre_loss_test
+  real(kind=fp_kind) :: min_loss_test
 
   integer(kind=4), parameter :: ITMAX = 2000
   real(kind=fp_kind), parameter :: EPS = 3.E-8, STPMX = 10, TOLX = 4.*EPS
@@ -38,6 +39,7 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_te
   call dloss_func(p,n,ann,nann,mol_training,n_mol_training,fp,mol_test,n_mol_test,fp2,actvfunc,g)
   write(*,'(A,I,A,G12.5,1X,G12.5)') 'Iteration ', 0, ' Loss functions ', sqrt(fp), sqrt(fp2)
   pre_loss_test = fp2
+  min_loss_test = fp2
   sum=0.
   hessin=0.d0
   do i=1,n
@@ -65,7 +67,11 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_te
     end do
     call dloss_func(p,n,ann,nann,mol_training,n_mol_training,loss_training,mol_test,n_mol_test,loss_test,actvfunc,g)
     write(*,'(A,I,A,G12.5,1X,G12.5,A,1X,G12.5,A,I2)') 'Iteration ', iter, ' Loss functions ', sqrt(loss_training), sqrt(loss_test), 'Norm of dfdv: ', dot_product(g,g), ' # coupon ', n_coupon
+    if(loss_test < min_loss_test)then
+      min_loss_test = loss_test
+    end if
     if(loss_test>loss_training)then
+      if(loss_test > min_loss_test*1.05d0**2)return
       if(loss_test <= pre_loss_test)then
         pre_loss_test = loss_test
         if(n_coupon < MAX_coupon) n_coupon = n_coupon + 1
@@ -76,7 +82,7 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_te
           n_coupon = n_coupon - 1
         else
           write(*,*)'Coupon used up. Training stops.'
-          return
+!          return
         end if
       end if
     end if
