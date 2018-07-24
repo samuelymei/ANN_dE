@@ -71,7 +71,7 @@ SUBROUTINE dfpmin(p,n,gtol,iter,fret,ann,nann,mol_training,n_mol_training,mol_te
       min_loss_test = loss_test
     end if
     if(loss_test>loss_training)then
-      if(loss_test > min_loss_test*1.05d0**2)return
+!      if(loss_test > min_loss_test*1.05d0**2)return
       if(loss_test <= pre_loss_test)then
         pre_loss_test = loss_test
         if(n_coupon < MAX_coupon) n_coupon = n_coupon + 1

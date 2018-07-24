@@ -177,6 +177,10 @@ module molecule_m
                                       & 2.0d0**(1-this%atoms_p(idx_atom)%xi)*(1+cos_angle_matrix(idx_atom,jdx_atom,kdx_atom))**this%atoms_p(idx_atom)%xi &
                                       & *exp(-this%atoms_p(idx_atom)%eta*(r_matrix(idx_atom,jdx_atom)**2+r_matrix(jdx_atom,kdx_atom)**2+r_matrix(idx_atom,kdx_atom)**2)) &
                                       & *fc_matrix(idx_atom,jdx_atom)*fc_matrix(jdx_atom,kdx_atom)*fc_matrix(idx_atom,kdx_atom)
+!            this%atoms_p(idx_atom)%g2 = this%atoms_p(idx_atom)%g2 + &
+!                                      & 2.0d0**(1-this%atoms_p(idx_atom)%xi)*(1+cos_angle_matrix(idx_atom,jdx_atom,kdx_atom))**this%atoms_p(idx_atom)%xi &
+!                                      & *exp(-this%atoms_p(idx_atom)%eta*(r_matrix(idx_atom,jdx_atom)**2+r_matrix(jdx_atom,kdx_atom)**2+r_matrix(idx_atom,kdx_atom)**2)) &
+!                                      & *fc_matrix(idx_atom,jdx_atom)*fc_matrix(idx_atom,kdx_atom)
           end do
         end do
       end do
@@ -213,7 +217,7 @@ module molecule_m
           r12 = distance2(crd1,crd2)
           r23 = distance2(crd2,crd3)
           r13 = distance2(crd1,crd3)
-          cos_angle = (r12**2+r23**2-r23**2)/(2*r12*r23)
+          cos_angle = (r12**2+r13**2-r23**2)/(2*r12*r13)
         end function cos_angle
     end subroutine gfactor
 

@@ -32,14 +32,15 @@ program ANN_dE
   real(kind=fp_kind) :: fret
  
 ! read in molecules
-  n_mol_training = 600
+  n_mol_training = 800
   n_mol_test = 200
   allocate(molecules(n_mol_training+n_mol_test))
   allocate(mol_training(n_mol_training))
   allocate(mol_test(n_mol_test))
   do idx_molecule = 1, n_mol_training + n_mol_test
-     write(f_xyz,'(I3)') idx_molecule
-     f_xyz='Mgas'//trim(adjustl(f_xyz))//'.xyz'
+     write(f_xyz,'(I4)') idx_molecule
+!     f_xyz='Mgas'//trim(adjustl(f_xyz))//'.xyz'
+     f_xyz=trim(adjustl(f_xyz))//'.xyz'
      id_f_xyz = 11   
      open(id_f_xyz, file = trim(f_xyz), form='formatted')
 !     call molecules(idx_molecule)%reset
@@ -50,7 +51,8 @@ program ANN_dE
   end do
 
 ! read in target data
-  open(12, file = "../e-diff-shif.dat")
+!  open(12, file = "../e-diff-shif.dat")
+  open(12, file = "../EB3LYP-EPM6.dat")
   do idx_molecule = 1, n_mol_training + n_mol_test
     read(12,*) jdx_molecule, molecules(idx_molecule)%target_dE
   end do
@@ -91,7 +93,7 @@ program ANN_dE
   nInput = 2
   nHiddenLayer = 3
   allocate(nNeurons(nHiddenLayer))
-  nNeurons = (/15,30,15/)
+  nNeurons = (/15,30,10/)
   nOutput = 1  ! this program so far can deal with only nOutput = 1
   actvfunc = 'sigmoid'
 
@@ -161,7 +163,7 @@ program ANN_dE
 
   call dfpmin(variables,nvariables,1.D-6,iter,fret,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test,actvfunc)
 
-!  call gdmin(variables,nvariables,1.D-6,iter,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test)
+!  call gdmin(variables,nvariables,1.D-6,iter,ann,nann,mol_training,n_mol_training,mol_test,n_mol_test,actvfunc)
 
   deallocate(molecules)
   deallocate(mol_training)
